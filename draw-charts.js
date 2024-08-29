@@ -10,10 +10,11 @@ function drawHistogram(id, durations, linePercentile = 85) {
     for (const val of durations) {
         histogram[val] = (histogram[val] || 0) + 1;
     }
-    const keys = sortNumbers(Object.keys(histogram));
+    var obj = require('./monte_carlo.js');
+    const keys = obj.sortNumbers(Object.keys(histogram));
     const labels = keys.map(n => n.toString());
     const data = keys.map(key => histogram[key]);
-    const lineValue = Math.round(percentile(durations, linePercentile/100, true));
+    const lineValue = Math.round(obj.percentile(durations, linePercentile/100, true));
     const lineIndex = labels.findIndex(val => lineValue < val) - 0.5;
 
     chartsCache[id] = new Chart(ctx, {
@@ -146,8 +147,9 @@ function drawScatterPlot(id, values, linePercentile = 85) {
         chartsCache[id].destroy();
         chartsCache[id] = null;
     }
+    var obj = require('./monte_carlo.js');
     const data = values.slice(0, 500).map((val, index) => ({x: index, y: val}))
-    const lineValue = Math.round(percentile(values, linePercentile/100, true));
+    const lineValue = Math.round(obj.percentile(values, linePercentile/100, true));
     const ctx = document.getElementById(id).getContext('2d');
 
     chartsCache[id] = new Chart(ctx, {
@@ -203,4 +205,18 @@ function drawScatterPlot(id, values, linePercentile = 85) {
             }
         }
     });
+}
+
+module.exports = {
+
+    drawHistogram : function(parameter1,parameter2,parameter3){
+        return drawHistogram(parameter1,parameter2,parameter3);
+    },
+    drawBurnDowns : function(parameter1,parameter2){
+        return drawBurnDowns(parameter1,parameter2);
+    },
+    drawScatterPlot: function(parameter1,parameter2,parameter3){
+        return drawScatterPlot(parameter1,parameter2,parameter3);
+    }
+
 }

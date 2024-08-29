@@ -19,10 +19,16 @@
     "url": "git+https://github.com/rodrigozr/ProjectForecaster.git"
   },
   "dependencies": {
+    "@stdlib/stats-base-dists-triangular-logpdf": "^0.2.2",
+    "@stdlib/stats-base-dists-triangular-pdf": "^0.2.2",
     "bootstrap": "^4.5.0",
     "chart.js": "^2.9.3",
     "chartjs-plugin-annotation": "^0.5.7",
     "jquery": "^3.5.1",
+    "mathjs": "^13.0.3",
     "moment": "^2.27.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }

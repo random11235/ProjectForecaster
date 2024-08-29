@@ -112,6 +112,93 @@ function calculateContributorsDistribution(simulationData) {
     return contributorsDistribution;
 }
 
+function median(numbers) {
+    const sorted = Array.from(numbers).sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+
+    if (sorted.length % 2 === 0) {
+        return (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+
+    return sorted[middle];
+}
+
+const mode = a => {
+    const count = {};
+    
+    a.forEach(e => {
+      if (!(e in count)) {
+        count[e] = 0;
+      }
+  
+      count[e]++;
+    });
+  
+    let bestElement = [];
+    let bestCount = 0;
+  
+    Object.entries(count).forEach(([k, v]) => {
+      if (v > bestCount) {
+        bestElement = [];
+        bestElement.push(k);
+        bestCount = v;
+      }
+      else if (v == bestCount){
+        bestElement.push(k);
+      }
+    });
+        
+       // return bestElement;
+
+    return {mode:bestElement, count:bestCount};
+}
+
+function solveForXonTriangularDistributionByFollowingOutline( min, max, mode, count){
+
+    //var pdf = require( '@stdlib/stats-base-dists-triangular-pdf' );
+
+
+    // calculate length of PD outline, i.e. how long is the function above zero the triangle abc where a is the min, b is the mac 
+    // and c is the count of the mode, i.e. not the mode itself but how many times it occurred.
+    const topOfTriangle = 2/(max - min) * 1000;
+    const leftSideLength = Math.sqrt(Math.pow(topOfTriangle, 2) + Math.pow((parseFloat(mode) - min), 2));
+    const rightSideLength = Math.sqrt(Math.pow(topOfTriangle, 2) + Math.pow((max - parseFloat(mode)), 2))
+    const length = leftSideLength + rightSideLength;
+
+    // take a random walk along that function
+    const randomWalk = Math.random() * length;
+
+    //tells me the probability of randomWalk for a given triangle of max, min and mode count
+    //const distributionOutput = pdf( parseFloat(mode), min, max, parseFloat(mode)); 
+
+    var x = mode;
+
+    // 
+    if ( randomWalk < leftSideLength) //LHS
+    {
+        // Given a PD abc we need thetaLeft, the angle on the 'a' corner of the triangle abc using sin(theta) = opposite/ hypotenuse
+        const thetaLeft = Math.asin(topOfTriangle / leftSideLength);
+
+        // Now we have to calculate x, the point on the x axis that the randomWalk intersects if we draw a line directly down to it.  
+        // xLength is the length of the line from the point on the PD outline to x.
+        const xLength = randomWalk * Math.sin(thetaLeft);
+
+        // Using this length we can use the cosign identity to work out x.  Min is added as the triangle intersects there.
+        x = randomWalk * Math.cos(thetaLeft) + min;
+    }
+    else {//RHS
+        const thetaRight = Math.asin(topOfTriangle / rightSideLength);
+        const lengthRhsHypotenuse = randomWalk - leftSideLength;
+        const yRhs = lengthRhsHypotenuse * Math.sin(thetaRight);
+
+        const lengthFromMode = lengthRhsHypotenuse * Math.cos(thetaRight);
+        x = parseFloat(mode) + lengthFromMode;
+
+    }
+
+    return x;;
+}
+
 /**
  * Executes a single round of Monte Carlo burn down simulation for the given simulation data
  * @param {*} simulationData simulation data
@@ -146,10 +233,42 @@ function simulateBurnDown(simulationData) {
     let effortWeeks = 0;
     const burnDown = [];
     let remainingTasks = totalTasks;
+
+   // let logpdf = import('@stdlib/stats-base-dists-triangular-logpdf');
+    //var logpdf = require( '@stdlib/stats-base-dists-triangular-pdf' );
+   
+    //const { mode } = require('mathjs');
+    //const { median } = require('mathjs');
+    const medianSamples = median(tpSamples);
+    const modeSamples = mode(tpSamples);
+    var modeSelection = null;
+    var modeCount = 0;
+    if (modeSamples.mode.length > 1)
+        modeSelection = medianSamples;  // using the max count median seems a good best guess even if it's not necessarily 100% accurate
+    else
+        modeSelection = modeSamples.mode;
+
+    modeCount = modeSamples.count;
+    
+
+    const min = Math.min(...tpSamples);
+    const max = Math.max(...tpSamples);
+    var outputTest=[];
     // Run the simulation
     while (remainingTasks > 0) {
         burnDown.push(Math.ceil(remainingTasks));
-        const randomTp = randomElement(tpSamples);
+
+
+        const randomTp = Math.floor(solveForXonTriangularDistributionByFollowingOutline(min, max, modeSelection, modeCount));
+       // Math.floor(distributionOutput * randomX);
+
+
+        //const randomTp = randomElement(tpSamples);
+
+        
+        //console.log("randomTp = ", randomTp);
+
+        outputTest.push(randomTp);
         const percentComplete = Math.max(0, Math.min(99, Math.round((totalTasks - remainingTasks) / totalTasks * 100)));
         const contributorsThisWeek = contributorsDistribution[percentComplete];
         const adjustedTp = (randomTp * (contributorsThisWeek / totalContributors));
@@ -158,6 +277,8 @@ function simulateBurnDown(simulationData) {
         weekNumber++;
         effortWeeks += contributorsThisWeek;
     }
+   // console.log("median of output = ", median(outputTest));
+   // console.log("mode of output = ", mode(outputTest).mode);
     burnDown.push(0);
     return {
         totalTasks,
@@ -167,6 +288,7 @@ function simulateBurnDown(simulationData) {
         burnDown,
     }
 }
+
 
 /**
  * Run a full Monte Carlo simulation for the given data
@@ -226,5 +348,18 @@ function runMonteCarloSimulation(simulationData) {
         tpErrorRate,
         ltErrorRate,
         resultsTable,
+    }
+}
+
+module.exports = {
+
+    runMonteCarloSimulation : function(parameter){
+        return runMonteCarloSimulation(parameter);
+    },
+    percentile : function(parameter1, parameter2, parameter3){
+        return percentile(parameter1, parameter2, parameter3);
+    },
+    sortNumbers : function(parameter1){
+        return sortNumbers(parameter1);
     }
 }

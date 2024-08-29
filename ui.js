@@ -99,18 +99,20 @@ $(window).on("load", function () {
         const write = str => $results.val($results.val() + str);
         $('#res-effort').val('Running...');
 
+        var obj = require('./monte_carlo.js');
+
         setTimeout(() => {
             // Run the simulation
             const startTime = Date.now();
-            const result = runMonteCarloSimulation(simulationData);
+            const result = obj.runMonteCarloSimulation(simulationData);
             const elapsed = Date.now() - startTime;
             $results.val('');
 
             // Report the results
             const confidenceLevel = simulationData.confidenceLevel;
             const reportPercentile = confidenceLevel / 100;
-            const effort = Math.round(percentile(result.simulations.map(s => s.effortWeeks), reportPercentile, true));
-            const duration = Math.round(percentile(result.simulations.map(s => s.durationInCalendarWeeks), reportPercentile, true));
+            const effort = Math.round(obj.percentile(result.simulations.map(s => s.effortWeeks), reportPercentile, true));
+            const duration = Math.round(obj.percentile(result.simulations.map(s => s.durationInCalendarWeeks), reportPercentile, true));
             $('#res-summary-header').text(`Project forecast summary (with ${confidenceLevel}% of confidence):`);
             $('#res-effort').val(effort);
             $('#res-duration').val(duration);
@@ -146,9 +148,10 @@ $(window).on("load", function () {
                 $('#show-more-row').hide();
             });
 
-            drawHistogram('res-duration-histogram', result.simulations.map(s => s.durationInCalendarWeeks), confidenceLevel);
-            drawBurnDowns('res-burn-downs', result.burnDowns);
-            drawScatterPlot('res-effort-scatter-plot', result.simulations.map(s => s.effortWeeks), confidenceLevel);
+            var objCharts = require('./draw-charts.js');
+            objCharts.drawHistogram('res-duration-histogram', result.simulations.map(s => s.durationInCalendarWeeks), confidenceLevel);
+            objCharts.drawBurnDowns('res-burn-downs', result.burnDowns);
+            objCharts.drawScatterPlot('res-effort-scatter-plot', result.simulations.map(s => s.effortWeeks), confidenceLevel);
 
             write(`Project forecast summary (with ${confidenceLevel}% of confidence):\n`);
             write(` - Up to ${effort} person-weeks of effort\n`);
