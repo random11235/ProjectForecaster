@@ -152,51 +152,24 @@ const mode = a => {
 
     return {mode:bestElement, count:bestCount};
 }
+/**
+ * Take a random length walk, between 0 and 1 along the integral of the Triangular distribution.  This is described by the Cumulative Distribution function.  https://en.wikipedia.org/wiki/Triangular_distribution
+ * 
+ */
+function applyTriangularDistribution(min, max, mode)
+{
+    const randomNumber = Math.random();
+    var output = null;
 
-function solveForXonTriangularDistributionByFollowingOutline( min, max, mode, count){
-
-    //var pdf = require( '@stdlib/stats-base-dists-triangular-pdf' );
-
-
-    // calculate length of PD outline, i.e. how long is the function above zero the triangle abc where a is the min, b is the mac 
-    // and c is the count of the mode, i.e. not the mode itself but how many times it occurred.
-    const topOfTriangle = 2/(max - min) * 1000;
-    const leftSideLength = Math.sqrt(Math.pow(topOfTriangle, 2) + Math.pow((parseFloat(mode) - min), 2));
-    const rightSideLength = Math.sqrt(Math.pow(topOfTriangle, 2) + Math.pow((max - parseFloat(mode)), 2))
-    const length = leftSideLength + rightSideLength;
-
-    // take a random walk along that function
-    const randomWalk = Math.random() * length;
-
-    //tells me the probability of randomWalk for a given triangle of max, min and mode count
-    //const distributionOutput = pdf( parseFloat(mode), min, max, parseFloat(mode)); 
-
-    var x = mode;
-
-    // 
-    if ( randomWalk < leftSideLength) //LHS
-    {
-        // Given a PD abc we need thetaLeft, the angle on the 'a' corner of the triangle abc using sin(theta) = opposite/ hypotenuse
-        const thetaLeft = Math.asin(topOfTriangle / leftSideLength);
-
-        // Now we have to calculate x, the point on the x axis that the randomWalk intersects if we draw a line directly down to it.  
-        // xLength is the length of the line from the point on the PD outline to x.
-        const xLength = randomWalk * Math.sin(thetaLeft);
-
-        // Using this length we can use the cosign identity to work out x.  Min is added as the triangle intersects there.
-        x = randomWalk * Math.cos(thetaLeft) + min;
+    if (randomNumber <= (mode - min)/(max-min)){
+        output = min + Math.sqrt(randomNumber*(max-min)*(mode-min));
     }
-    else {//RHS
-        const thetaRight = Math.asin(topOfTriangle / rightSideLength);
-        const lengthRhsHypotenuse = randomWalk - leftSideLength;
-        const yRhs = lengthRhsHypotenuse * Math.sin(thetaRight);
-
-        const lengthFromMode = lengthRhsHypotenuse * Math.cos(thetaRight);
-        x = parseFloat(mode) + lengthFromMode;
-
+    else{
+        output = max - Math.sqrt((1-randomNumber)*(max-min)*(max-mode));
     }
 
-    return x;;
+    return Math.round(output);
+
 }
 
 /**
@@ -234,19 +207,15 @@ function simulateBurnDown(simulationData) {
     const burnDown = [];
     let remainingTasks = totalTasks;
 
-   // let logpdf = import('@stdlib/stats-base-dists-triangular-logpdf');
-    //var logpdf = require( '@stdlib/stats-base-dists-triangular-pdf' );
-   
-    //const { mode } = require('mathjs');
-    //const { median } = require('mathjs');
     const medianSamples = median(tpSamples);
     const modeSamples = mode(tpSamples);
     var modeSelection = null;
     var modeCount = 0;
-    if (modeSamples.mode.length > 1)
+    
+   // if (modeSamples.mode.length > 1)
         modeSelection = medianSamples;  // using the max count median seems a good best guess even if it's not necessarily 100% accurate
-    else
-        modeSelection = modeSamples.mode;
+   // else
+//        modeSelection = modeSamples.mode;
 
     modeCount = modeSamples.count;
     
@@ -259,14 +228,8 @@ function simulateBurnDown(simulationData) {
         burnDown.push(Math.ceil(remainingTasks));
 
 
-        const randomTp = Math.floor(solveForXonTriangularDistributionByFollowingOutline(min, max, modeSelection, modeCount));
-       // Math.floor(distributionOutput * randomX);
-
-
-        //const randomTp = randomElement(tpSamples);
-
-        
-        //console.log("randomTp = ", randomTp);
+        const randomTp = applyTriangularDistribution(min, max, modeSelection);
+       // const randomTp = (solveForXonTriangularDistributionByFollowingOutline(min, max, modeSelection, modeCount));
 
         outputTest.push(randomTp);
         const percentComplete = Math.max(0, Math.min(99, Math.round((totalTasks - remainingTasks) / totalTasks * 100)));
@@ -277,8 +240,6 @@ function simulateBurnDown(simulationData) {
         weekNumber++;
         effortWeeks += contributorsThisWeek;
     }
-   // console.log("median of output = ", median(outputTest));
-   // console.log("mode of output = ", mode(outputTest).mode);
     burnDown.push(0);
     return {
         totalTasks,
@@ -361,5 +322,13 @@ module.exports = {
     },
     sortNumbers : function(parameter1){
         return sortNumbers(parameter1);
+    },
+    solveForXonTriangularDistributionByFollowingOutline : function(parameter1, parameter2, parameter3){
+        return solveForXonTriangularDistributionByFollowingOutline(parameter1, parameter2, parameter3);
+    },
+    applyTriangularDistribution : function(parameter1, parameter2, parameter3){
+        return applyTriangularDistribution(parameter1, parameter2, parameter3);
     }
+
+
 }

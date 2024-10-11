@@ -377,22 +377,47 @@ const mode = a => {
     return {mode:bestElement, count:bestCount};
 }
 
-function solveForXonTriangularDistributionByFollowingOutline( min, max, mode, count){
+function applyTriangularDistribution(min, max, mode)
+{
+    const randomNumber = Math.random();
+    var output = null;
+
+    if (randomNumber <= (mode - min)/(max-min)){
+        output = min + Math.sqrt(randomNumber*(max-min)*(mode-min));
+    }
+    else{
+        output = max - Math.sqrt((1-randomNumber)*(max-min)*(max-mode));
+    }
+
+    return Math.round(output);
+
+}
+
+function solveForXonTriangularDistributionByFollowingOutline( min, max, mode, testX){
 
     //var pdf = require( '@stdlib/stats-base-dists-triangular-pdf' );
 
 
     // calculate length of PD outline, i.e. how long is the function above zero the triangle abc where a is the min, b is the mac 
     // and c is the count of the mode, i.e. not the mode itself but how many times it occurred.
-    const topOfTriangle = 2/(max - min) * 1000;
-    const leftSideLength = Math.sqrt(Math.pow(topOfTriangle, 2) + Math.pow((parseFloat(mode) - min), 2));
-    const rightSideLength = Math.sqrt(Math.pow(topOfTriangle, 2) + Math.pow((max - parseFloat(mode)), 2))
+    const topOfTriangle = max - min;//2/(max - min);
+    const leftSideLength = Math.sqrt(Math.pow(topOfTriangle, 2) + Math.pow((parseInt(mode) - min), 2));
+    const rightSideLength = Math.sqrt(Math.pow(topOfTriangle, 2) + Math.pow((max - parseInt(mode)), 2))
     const length = leftSideLength + rightSideLength;
 
-    // take a random walk along that function
-    const randomWalk = Math.random() * length;
+    //testX = leftSideLength;
+    var randomWalk;
 
-    //tells me the probability of randomWalk for a given triangle of max, min and mode count
+   // if (randomWalk === undefined)
+   // {
+        // take a random walk along that function
+        randomWalk = Math.random() * length;
+   // }
+
+   // console.log("testX = ", testX);
+   // console.log("randomWalk = ", randomWalk);
+
+    //tells me the probability of randomWalk for a given triangle of max, min and mode 
     //const distributionOutput = pdf( parseFloat(mode), min, max, parseFloat(mode)); 
 
     var x = mode;
@@ -405,22 +430,28 @@ function solveForXonTriangularDistributionByFollowingOutline( min, max, mode, co
 
         // Now we have to calculate x, the point on the x axis that the randomWalk intersects if we draw a line directly down to it.  
         // xLength is the length of the line from the point on the PD outline to x.
-        const xLength = randomWalk * Math.sin(thetaLeft);
+        //const yAtX = randomWalk * Math.sin(thetaLeft);
 
         // Using this length we can use the cosign identity to work out x.  Min is added as the triangle intersects there.
         x = randomWalk * Math.cos(thetaLeft) + min;
+       // console.log("left");
     }
     else {//RHS
         const thetaRight = Math.asin(topOfTriangle / rightSideLength);
         const lengthRhsHypotenuse = randomWalk - leftSideLength;
-        const yRhs = lengthRhsHypotenuse * Math.sin(thetaRight);
+        //const yRhs = lengthRhsHypotenuse * Math.sin(thetaRight);
 
         const lengthFromMode = lengthRhsHypotenuse * Math.cos(thetaRight);
-        x = parseFloat(mode) + lengthFromMode;
+        x = parseInt(mode) + lengthFromMode;
+
+        //console.log("right");
 
     }
 
-    return x;;
+    //console.log("left side length = ", leftSideLength);
+    //console.log("right side length = ", rightSideLength);
+    //console.log("length = ", length);
+    return Math.round(x);
 }
 
 /**
@@ -467,10 +498,10 @@ function simulateBurnDown(simulationData) {
     const modeSamples = mode(tpSamples);
     var modeSelection = null;
     var modeCount = 0;
-    if (modeSamples.mode.length > 1)
+   // if (modeSamples.mode.length > 1)
         modeSelection = medianSamples;  // using the max count median seems a good best guess even if it's not necessarily 100% accurate
-    else
-        modeSelection = modeSamples.mode;
+   // else
+//        modeSelection = modeSamples.mode;
 
     modeCount = modeSamples.count;
     
@@ -483,7 +514,8 @@ function simulateBurnDown(simulationData) {
         burnDown.push(Math.ceil(remainingTasks));
 
 
-        const randomTp = Math.floor(solveForXonTriangularDistributionByFollowingOutline(min, max, modeSelection, modeCount));
+        const randomTp = applyTriangularDistribution(min, max, modeSelection);
+       // const randomTp = (solveForXonTriangularDistributionByFollowingOutline(min, max, modeSelection, modeCount));
        // Math.floor(distributionOutput * randomX);
 
 
@@ -585,7 +617,15 @@ module.exports = {
     },
     sortNumbers : function(parameter1){
         return sortNumbers(parameter1);
+    },
+    solveForXonTriangularDistributionByFollowingOutline : function(parameter1, parameter2, parameter3){
+        return solveForXonTriangularDistributionByFollowingOutline(parameter1, parameter2, parameter3);
+    },
+    applyTriangularDistribution : function(parameter1, parameter2, parameter3){
+        return applyTriangularDistribution(parameter1, parameter2, parameter3);
     }
+
+
 }
 
 },{}],3:[function(require,module,exports){

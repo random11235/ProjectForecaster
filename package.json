@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Forecast probabilities of a project's effort and duration using Monte Carlo simulations",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "build": "npm install && npm run copy-all && npm run webapp",
     "copy-all": "npm run copy-chart && npm run copy-jquery && npm run copy-bootstrap && npm run copy-moment",
     "copy-chart": "cp node_modules/chart.js/dist/Chart.bundle.min.js node_modules/chart.js/dist/Chart.min.css node_modules/chartjs-plugin-annotation/chartjs-plugin-annotation.min.js ./",
